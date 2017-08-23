@@ -1,0 +1,29 @@
+body {
+	background-color: #eee;
+}
+
+#simple-web-chat {
+	position: relative;
+	width: 640px;
+	height: 480px;
+	margin: 0 auto;
+	background-color: white;
+	overflow: hidden;
+}
+
+.swc-absolute-bottom {
+	position: absolute;
+	width: 100%;
+	bottom: 0;
+}
+
+.swc-absolute-bottom input {
+	width: 100%;
+}
+
+.swc-message {
+	width: 100%;
+	border-top: 1px solid #aaa;
+}
+
+
