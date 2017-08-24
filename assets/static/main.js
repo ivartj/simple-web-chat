@@ -39,6 +39,7 @@ SimpleWebChat.prototype.addMessage = function(msg) {
 
 SimpleWebChat.prototype.messageSubmitHandler = function(ev) {
 	ev.preventDefault();
+	this.messageInputElement.focus();
 	if(this.messageInputElement.value.length == 0)
 		return;
 	this.socket.send(JSON.stringify({
