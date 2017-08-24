@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"github.com/gorilla/websocket"
 	"fmt"
+	"log"
 )
 
 type context struct{
@@ -37,26 +38,46 @@ func (ctx *context) handleWebSocket(w http.ResponseWriter, req *http.Request) {
 	}
 
 	client := newClient(ctx, conn)
-	ctx.broadcast("* " + client.name + " joined", "#000000")
+	ctx.broadcast(&message{
+		Type: "join",
+		User: client.name,
+	})
 	for {
 		msg, err := client.receive()
 		if err != nil {
 			// TODO better error handling
 			panic(err)
 		}
-		err = ctx.broadcast(fmt.Sprintf("%s: %s", client.name, msg), client.color)
-		if err != nil {
-			panic(err)
+		switch msg.Type {
+		case "message":
+			err = ctx.broadcast(&message{
+				Type: "message",
+				User: client.name,
+				Color: client.color,
+				Text: msg.Text,
+			})
+			if err != nil {
+				panic(err)
+			}
+		case "leave":
+			delete(ctx.clients, client.name)
+			err = ctx.broadcast(&message{
+				Type: "leave",
+				User: client.name,
+			})
+			return
+		default:
+			panic(fmt.Errorf("Unexpected message type '%s'", msg.Type))
 		}
 	}
 }
 
-func (ctx *context) broadcast(message string, color string) error {
+func (ctx *context) broadcast(msg *message) error {
+
 	for _, c := range ctx.clients {
-		err := c.send(message, color)
+		err := c.send(msg)
 		if err != nil {
-			// TODO continue and gather up errors
-			return err
+			log.Printf("WARNING: Error on sending message to '%s': %s", c.name, err.Error())
 		}
 	}
 

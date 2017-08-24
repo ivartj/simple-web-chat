@@ -43,35 +43,33 @@ func newClient(ctx *context, conn *websocket.Conn) *client {
 	return c
 }
 
-func (c *client) send(message string, color string) error {
-	var msg struct{
-		Message string `json:"message"`
-		Color string `json:"color"`
-	}
-	msg.Message = message
-	msg.Color = color
-	bytes, err := json.Marshal(&msg)
-	if err != nil {
-		return err
-	}
-	err = c.conn.WriteMessage(websocket.TextMessage, bytes)
+func (c *client) send(msg *message) error {
+	err := c.conn.WriteMessage(websocket.TextMessage, msg.encode())
 	return err
 }
 
-func (c *client) receive() (string, error) {
-	var msgobj struct{
-		Message string `json:"message"`
+func (c *client) receive() (*message, error) {
+	var msg message
+	msgType, bytes, err := c.conn.ReadMessage()
+	if websocket.IsUnexpectedCloseError(err) {
+		return &message{
+			Type: "leave",
+		}, nil
 	}
-	// TODO handle WebSocket message types other than TextMessage
-	_, bytes, err := c.conn.ReadMessage()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	err = json.Unmarshal(bytes, &msgobj)
-	if err != nil {
-		return "", err
+	switch msgType {
+	case websocket.TextMessage:
+		err = json.Unmarshal(bytes, &msg)
+		return &msg, err
+	case websocket.CloseMessage:
+		return &message{
+			Type: "leave",
+		}, nil
+	default:
+		return nil, fmt.Errorf("Unexpected WebSocket message type %d", msgType)
 	}
-	return msgobj.Message, nil
 }
 

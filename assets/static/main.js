@@ -16,9 +16,25 @@ function SimpleWebChat(elementId, websocketAddress) {
 SimpleWebChat.prototype.addMessage = function(msg) {
 	var messageElement = document.createElement("div");
 	messageElement.classList.add("swc-message");
-	messageElement.innerText = msg.message;
-	messageElement.style.color = msg.color;
+	if(msg.color)
+		messageElement.style.color = msg.color;
+
+	switch(msg.type) {
+	case "message":
+		messageElement.innerText = msg.user + ": " + msg.text;
+		break;
+	case "join":
+		messageElement.innerText = "* " + msg.user + " joined";
+		break;
+	case "leave":
+		messageElement.innerText = "* " + msg.user + " left";
+		break;
+	default:
+		// TODO
+	}
+
 	this.messagesElement.appendChild(messageElement);
+
 };
 
 SimpleWebChat.prototype.messageSubmitHandler = function(ev) {
@@ -26,7 +42,8 @@ SimpleWebChat.prototype.messageSubmitHandler = function(ev) {
 	if(this.messageInputElement.value.length == 0)
 		return;
 	this.socket.send(JSON.stringify({
-		message: this.messageInputElement.value
+		type: "message",
+		text: this.messageInputElement.value
 	}));
 	this.messageInputElement.value = "";
 };
