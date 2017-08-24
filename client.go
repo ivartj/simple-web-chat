@@ -18,7 +18,7 @@ func generateClientName() string {
 	m := r & 0xFF
 	p1 := (r >> 8) % 3
 	p2 := (p1 + ((r >> 16) % 2) + 1) % 3
-	color := (0xFF << (p1 * 8)) | (m << (p2 * 8))
+	color := ((0xFF - m) << (p1 * 8)) | (m << (p2 * 8))
 	name := fmt.Sprintf("#%06X", color)
 	return name
 }
