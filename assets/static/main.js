@@ -41,6 +41,6 @@ SimpleWebChat.prototype.messageReceiveHandler = function(ev) {
 var chat;
 window.onload = function() {
 	// TODO Non-hardcoded websocket address
-	chat = new SimpleWebChat("simple-web-chat", "ws://localhost:9999/websocket");
+	chat = new SimpleWebChat("simple-web-chat", "ws://" + window.location.host + "/websocket");
 };
 

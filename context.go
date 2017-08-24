@@ -11,14 +11,14 @@ type context struct{
 	clients map[string]*client
 }
 
-func newContext() *context {
+func newContext(assets string) *context {
 	ctx := &context{
 		ServeMux: *http.NewServeMux(),
 		clients: map[string]*client{},
 	}
 
 	ctx.HandleFunc("/websocket", ctx.handleWebSocket)
-	ctx.Handle("/", http.FileServer(http.Dir("./static/")))
+	ctx.Handle("/", http.FileServer(http.Dir(assets + "/static/")))
 
 	return ctx
 }
