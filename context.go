@@ -53,7 +53,7 @@ func (ctx *context) broadcast(msg *message) {
 	for _, c := range ctx.clients {
 		err := c.send(msg)
 		if err != nil {
-			log.Printf("WARNING: Error on sending message to '%s': %s", c.name, err.Error())
+			log.Printf("WARNING: Error on sending message to '%s': %s\n", c.name, err.Error())
 		}
 	}
 }

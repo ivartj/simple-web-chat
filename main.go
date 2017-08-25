@@ -26,7 +26,7 @@ func main() {
 				}
 				port, err = strconv.ParseUint(portstr, 10, 16)
 				if err != nil {
-					log.Fatalf("Failed to parse port number given on %s: %s", tok.Arg(), err.Error())
+					log.Fatalf("Failed to parse port number given on %s: %s\n", tok.Arg(), err.Error())
 				}
 			case "--assets":
 				var err error
@@ -35,11 +35,11 @@ func main() {
 					log.Fatalf("Error on parsing command-line arguments: %s\n", err.Error())
 				}
 			default:
-				log.Fatalf("Unrecognized option, '%s'", tok.Arg())
+				log.Fatalf("Unrecognized option, '%s'\n", tok.Arg())
 			}
 
 		} else {
-			log.Fatalf("Unexpected non-option argument '%s'", tok.Arg())
+			log.Fatalf("Unexpected non-option argument '%s'\n", tok.Arg())
 		}
 	}
 	if tok.Err() != nil {
