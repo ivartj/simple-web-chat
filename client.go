@@ -19,7 +19,8 @@ type client struct{
 	lastPongReceived time.Time
 }
 
-func generateClientName() string {
+// Generates color code with a value of 255 distributed randomly across two primary colours.
+func generateColorCode() string {
 	r := rand.Uint32()
 	m := r & 0xFF
 	p1 := (r >> 8) % 3
@@ -33,7 +34,7 @@ func newClient(ctx *context, conn *websocket.Conn) *client {
 	var name string
 	for {
 		// TODO ensure that this can not become an infinite loop (by too many users)
-		name = generateClientName()
+		name = generateColorCode()
 		_, exists := ctx.clients[name]
 		if exists == false {
 			break
