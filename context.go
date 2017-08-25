@@ -48,7 +48,7 @@ func (ctx *context) handleWebSocket(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (ctx *context) broadcast(msg *message) error {
+func (ctx *context) broadcast(msg *message) {
 
 	for _, c := range ctx.clients {
 		err := c.send(msg)
@@ -56,7 +56,5 @@ func (ctx *context) broadcast(msg *message) error {
 			log.Printf("WARNING: Error on sending message to '%s': %s", c.name, err.Error())
 		}
 	}
-
-	return nil
 }
 

@@ -16,6 +16,7 @@ type client struct{
 	color string
 	readLock sync.Mutex
 	writeLock sync.Mutex
+	lastPongReceived time.Time
 }
 
 func generateClientName() string {
@@ -45,6 +46,7 @@ func newClient(ctx *context, conn *websocket.Conn) *client {
 		color: name,
 	}
 	ctx.clients[name] = c
+	c.conn.SetPongHandler(c.pongHandle)
 
 	return c
 }
@@ -91,17 +93,39 @@ func (c *client) ping() error {
 	return c.conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(time.Second * 5))
 }
 
+func (c *client) pongHandle(appData string) error {
+	c.lastPongReceived = time.Now()
+	return nil
+}
+
+const pingInterval = 20
+
 func (c *client) loop() error {
 	go func() {
 		for {
-			// TODO check that pong arrives timely
-			time.Sleep(time.Second * 20)
+			pingSent := time.Now()
 			err := c.ping()
 			if err != nil {
 				c.conn.Close()
 				break
 			}
+			time.Sleep(time.Second * pingInterval)
+			if c.lastPongReceived.IsZero() || c.lastPongReceived.Before(pingSent) {
+				c.send(&message{
+					Type: "server-system",
+					Text: "Closing connection due to ping timeout",
+				})
+				c.conn.Close()
+			}
 		}
+	}()
+
+	defer func() {
+		delete(c.ctx.clients, c.name)
+		c.ctx.broadcast(&message{
+			Type: "leave",
+			User: c.name,
+		})
 	}()
 
 	for {
@@ -111,21 +135,14 @@ func (c *client) loop() error {
 		}
 		switch msg.Type {
 		case "message":
-			err = c.ctx.broadcast(&message{
+			c.ctx.broadcast(&message{
 				Type: "message",
 				User: c.name,
 				Color: c.color,
 				Text: msg.Text,
 			})
-			if err != nil {
-				return err
-			}
 		case "leave":
-			delete(c.ctx.clients, c.name)
-			err = c.ctx.broadcast(&message{
-				Type: "leave",
-				User: c.name,
-			})
+			// Handled in deferred function above
 			return nil
 		default:
 			return fmt.Errorf("Unexpected message type '%s'", msg.Type)

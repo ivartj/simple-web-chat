@@ -29,6 +29,7 @@ SimpleWebChat.prototype.addMessage = function(msg) {
 		messageElement.innerText = "* " + msg.user + " left";
 		break;
 	case "client-system":
+	case "server-system":
 		messageElement.innerText = msg.text;
 		break;
 	default:
@@ -59,9 +60,14 @@ SimpleWebChat.prototype.socketHandle = function(ev) {
 		this.addMessage(msg);
 		break;
 	case "close":
+		var reason;
+		if(ev.reason)
+			reason = ev.reason;
+		else
+			reason = "No reason given"
 		this.addMessage({
 			type: "client-system",
-			text: "Connection closed: " + ev.reason
+			text: "Connection closed: " + reason + "."
 		});
 		break;
 	default:
