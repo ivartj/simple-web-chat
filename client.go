@@ -5,12 +5,17 @@ import (
 	"math/rand"
 	"fmt"
 	"encoding/json"
+	"sync"
+	"time"
 )
 
 type client struct{
+	ctx *context
 	conn *websocket.Conn
 	name string
 	color string
+	readLock sync.Mutex
+	writeLock sync.Mutex
 }
 
 func generateClientName() string {
@@ -34,6 +39,7 @@ func newClient(ctx *context, conn *websocket.Conn) *client {
 		}
 	}
 	c := &client{
+		ctx: ctx,
 		conn: conn,
 		name: name,
 		color: name,
@@ -44,12 +50,18 @@ func newClient(ctx *context, conn *websocket.Conn) *client {
 }
 
 func (c *client) send(msg *message) error {
+	c.writeLock.Lock()
+	defer c.writeLock.Unlock()
 	err := c.conn.WriteMessage(websocket.TextMessage, msg.encode())
 	return err
 }
 
 func (c *client) receive() (*message, error) {
 	var msg message
+
+	c.readLock.Lock()
+	defer c.readLock.Unlock()
+
 	msgType, bytes, err := c.conn.ReadMessage()
 	if websocket.IsUnexpectedCloseError(err) {
 		return &message{
@@ -71,5 +83,55 @@ func (c *client) receive() (*message, error) {
 	default:
 		return nil, fmt.Errorf("Unexpected WebSocket message type %d", msgType)
 	}
+}
+
+func (c *client) ping() error {
+	c.writeLock.Lock()
+	defer c.writeLock.Unlock()
+	return c.conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(time.Second * 5))
+}
+
+func (c *client) loop() error {
+	go func() {
+		for {
+			// TODO check that pong arrives timely
+			time.Sleep(time.Second * 20)
+			err := c.ping()
+			if err != nil {
+				c.conn.Close()
+				break
+			}
+		}
+	}()
+
+	for {
+		msg, err := c.receive()
+		if err != nil {
+			return err
+		}
+		switch msg.Type {
+		case "message":
+			err = c.ctx.broadcast(&message{
+				Type: "message",
+				User: c.name,
+				Color: c.color,
+				Text: msg.Text,
+			})
+			if err != nil {
+				return err
+			}
+		case "leave":
+			delete(c.ctx.clients, c.name)
+			err = c.ctx.broadcast(&message{
+				Type: "leave",
+				User: c.name,
+			})
+			return nil
+		default:
+			return fmt.Errorf("Unexpected message type '%s'", msg.Type)
+		}
+	}
+
+	return nil
 }
 

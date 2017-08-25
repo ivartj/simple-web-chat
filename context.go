@@ -3,7 +3,6 @@ package main
 import (
 	"net/http"
 	"github.com/gorilla/websocket"
-	"fmt"
 	"log"
 )
 
@@ -42,33 +41,10 @@ func (ctx *context) handleWebSocket(w http.ResponseWriter, req *http.Request) {
 		Type: "join",
 		User: client.name,
 	})
-	for {
-		msg, err := client.receive()
-		if err != nil {
-			// TODO better error handling
-			panic(err)
-		}
-		switch msg.Type {
-		case "message":
-			err = ctx.broadcast(&message{
-				Type: "message",
-				User: client.name,
-				Color: client.color,
-				Text: msg.Text,
-			})
-			if err != nil {
-				panic(err)
-			}
-		case "leave":
-			delete(ctx.clients, client.name)
-			err = ctx.broadcast(&message{
-				Type: "leave",
-				User: client.name,
-			})
-			return
-		default:
-			panic(fmt.Errorf("Unexpected message type '%s'", msg.Type))
-		}
+	err = client.loop()
+	if err != nil {
+		// TODO better error handling
+		panic(err)
 	}
 }
 

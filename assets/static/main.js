@@ -10,7 +10,7 @@ function SimpleWebChat(elementId, websocketAddress) {
 	this.messageFormElement.addEventListener("submit", function(ev) { swc.messageSubmitHandler(ev); }, { capture: true });
 
 	this.socket = new WebSocket(websocketAddress);
-	this.socket.onmessage = function(ev) { swc.messageReceiveHandler(ev); };
+	this.socket.onmessage = this.socket.onclose = function(ev) { swc.socketHandle(ev); };
 }
 
 SimpleWebChat.prototype.addMessage = function(msg) {
@@ -28,6 +28,9 @@ SimpleWebChat.prototype.addMessage = function(msg) {
 		break;
 	case "leave":
 		messageElement.innerText = "* " + msg.user + " left";
+		break;
+	case "client-system":
+		messageElement.innerText = msg.text;
 		break;
 	default:
 		// TODO
@@ -49,16 +52,31 @@ SimpleWebChat.prototype.messageSubmitHandler = function(ev) {
 	this.messageInputElement.value = "";
 };
 
-SimpleWebChat.prototype.messageReceiveHandler = function(ev) {
-	// TODO handle exceptions
-	var msg = JSON.parse(ev.data);
-	this.addMessage(msg);
+SimpleWebChat.prototype.socketHandle = function(ev) {
+	switch(ev.type) {
+	case "message":
+		// TODO handle parsing exceptions
+		var msg = JSON.parse(ev.data);
+		this.addMessage(msg);
+		break;
+	case "close":
+		this.addMessage({
+			type: "client-system",
+			text: "Connection closed."
+		});
+		break;
+	default:
+		// TODO
+	}
 };
 
 // main
 var chat;
 window.onload = function() {
 	// TODO Non-hardcoded websocket address
-	chat = new SimpleWebChat("simple-web-chat", "ws://" + window.location.host + "/websocket");
+	var protocol = "ws:";
+	if(window.location.protocol == "https:")
+		protocol = "wss:";
+	chat = new SimpleWebChat("simple-web-chat", protocol + "//" + window.location.host + "/websocket");
 };
 
