@@ -99,7 +99,7 @@ func (c *client) pongHandle(appData string) error {
 	return nil
 }
 
-const pingInterval = 20
+const pingInterval = 5
 
 func (c *client) loop() error {
 	go func() {
