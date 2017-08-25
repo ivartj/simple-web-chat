@@ -1,16 +1,15 @@
 function SimpleWebChat(elementId, websocketAddress) {
-	// TODO: check for exception
-	this.element = document.getElementById(elementId);
-	this.messagesElement = this.element.getElementsByClassName("swc-messages")[0];
-	this.messageFormElement = this.element.getElementsByClassName("swc-message-form")[0];
-	this.messageInputElement = this.element.getElementsByClassName("swc-message-input")[0];
 
-	// TODO clean up this
 	var swc = this;
-	this.messageFormElement.addEventListener("submit", function(ev) { swc.messageSubmitHandler(ev); }, { capture: true });
 
-	this.socket = new WebSocket(websocketAddress);
-	this.socket.onmessage = this.socket.onclose = function(ev) { swc.socketHandle(ev); };
+	swc.element = document.getElementById(elementId);
+	swc.messagesElement = swc.element.getElementsByClassName("swc-messages")[0];
+	swc.messageFormElement = swc.element.getElementsByClassName("swc-message-form")[0];
+	swc.messageInputElement = swc.element.getElementsByClassName("swc-message-input")[0];
+
+	swc.messageFormElement.addEventListener("submit", function(ev) { swc.messageSubmitHandler(ev); }, { capture: true });
+	swc.socket = new WebSocket(websocketAddress);
+	swc.socket.onmessage = swc.socket.onclose = function(ev) { swc.socketHandle(ev); };
 }
 
 SimpleWebChat.prototype.addMessage = function(msg) {
@@ -33,7 +32,8 @@ SimpleWebChat.prototype.addMessage = function(msg) {
 		messageElement.innerText = msg.text;
 		break;
 	default:
-		// TODO
+		messageElement.innerText = "Error: Unexpected 'type' field value '" + msg.type + "' in JSON message.";
+		break;
 	}
 
 	this.messagesElement.appendChild(messageElement);
@@ -55,25 +55,26 @@ SimpleWebChat.prototype.messageSubmitHandler = function(ev) {
 SimpleWebChat.prototype.socketHandle = function(ev) {
 	switch(ev.type) {
 	case "message":
-		// TODO handle parsing exceptions
 		var msg = JSON.parse(ev.data);
 		this.addMessage(msg);
 		break;
 	case "close":
 		this.addMessage({
 			type: "client-system",
-			text: "Connection closed."
+			text: "Connection closed: " + ev.reason
 		});
 		break;
 	default:
-		// TODO
+		this.addMessage({
+			type: "client-system",
+			text: "Error: Unexpected 'type' field value '" + ev.type + "' in JSON message received over WebSocket."
+		})
 	}
 };
 
 // main
 var chat;
 window.onload = function() {
-	// TODO Non-hardcoded websocket address
 	var protocol = "ws:";
 	if(window.location.protocol == "https:")
 		protocol = "wss:";
