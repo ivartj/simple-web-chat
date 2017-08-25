@@ -7,6 +7,14 @@ function SimpleWebChat(elementId, websocketAddress) {
 	swc.messageFormElement = swc.element.getElementsByClassName("swc-message-form")[0];
 	swc.messageInputElement = swc.element.getElementsByClassName("swc-message-input")[0];
 
+	if(typeof WebSocket === "undefined") {
+		swc.addMessage({
+			type: "client-system",
+			text: "Error: Your browser does not appear to support the WebSocket API required by this application."
+		});
+		return;
+	}
+
 	swc.messageFormElement.addEventListener("submit", function(ev) { swc.messageSubmitHandler(ev); }, { capture: true });
 	swc.socket = new WebSocket(websocketAddress);
 	swc.socket.onmessage = swc.socket.onclose = function(ev) { swc.socketHandle(ev); };
