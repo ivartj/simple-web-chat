@@ -9,7 +9,17 @@ import (
 	"strconv"
 	"os"
 	"fmt"
+	"io"
 )
+
+const (
+	mainProgramName = "simple-web-chat"
+	mainProgramVersion = "0.1-SNAPSHOT"
+)
+
+func mainHelpMessage(w io.Writer) {
+	fmt.Fprintf(w, "Usage: %s [ -p <port-number> ] [ --assets <assets-directory> ]\n", mainProgramName)
+}
 
 func main() {
 	tok := args.NewTokenizer(os.Args)
@@ -19,6 +29,14 @@ func main() {
 		if tok.IsOption() {
 
 			switch tok.Arg() {
+			case "-h", "--help":
+				mainHelpMessage(os.Stdout)
+				os.Exit(0)
+
+			case "--version":
+				fmt.Printf("%s version %s\n", mainProgramName, mainProgramVersion)
+				os.Exit(0)
+
 			case "-p", "--port":
 				portstr, err := tok.TakeParameter()
 				if err != nil {
